@@ -243,6 +243,33 @@ std::vector<int> getError() {
 	delete Data;
 	return errors;
 }
+char* getCircle(const int &x, const int &y) {
+	double  ratio = atof(param[2].c_str());
+	char* Data = inImage.getImageData();
+	const char* Circle = inImage.getChangedData();
+	int newx = int((x + 1) * ratio + 0.5) - 1;
+	int newy = int((y + 1) * ratio + 0.5) - 1;
+	char* Back = new char[3*inImage.getWidth() * inImage.getHeight()];
+	for (int i = 0; i < inImage.getWidth() * inImage.getHeight(); i++)
+	{
+		Back[3 * i] = Data[3 * i];
+		Back[3 * i+1] = Data[3 * i + 1];
+		Back[3 * i+2] = Data[3 * i + 2];
+	}
+	for (int i = 0; i < inImage.getHeight(); i++) {
+		for (int j = 0; j < inImage.getWidth(); j++) {
+			if (round(sqrt((i - x) * (i - x) + (j - y) * (j - y))) < 50) {
+				int differi = i - x;
+				int differj = j - y;
+				int newpos = max(((newx + differi) * inImage.getChangedWidth() + (newy + differj)), inImage.getChangedWidth());
+				Back[3 * (i * inImage.getWidth() + j)] = Circle[3 * newpos];
+				Back[3 * (i * inImage.getWidth() + j) + 1] = Circle[3 * newpos + 1];
+				Back[3 * (i * inImage.getWidth() + j) + 2] = Circle[3 * newpos + 2];
+			}
+		}
+	}
+	return Back;
+}
 //
 //  FUNCTION: WndProc(HWND, unsigned, WORD, LONG)
 //
@@ -260,9 +287,6 @@ int oldy = 0;
 int redraw = 0;
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-// TO DO: part useful to render video frames, may place your own code here in this function
-// You are free to change the following code in any way in order to display the video
-
 	int wmId, wmEvent;
 	PAINTSTRUCT ps;
 	HDC hdc;
@@ -292,18 +316,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				   return DefWindowProc(hWnd, message, wParam, lParam);
 			}
 			break;
-		//case WM_LBUTTONDOWN:{//left click
-		//	MessageBox(hWnd, "this is click event!", "click", 0);
-		//	hdc = GetDC(hWnd);//get handle for text, location x=0,y=50
-		//	TextOut(hdc, 0, 50, "WM_LBUTTONDONW!",strlen("alert WM_LBUTTONDONW message!"));
-		//	ReleaseDC(hWnd, hdc);//release
-		//	break;}
 		case WM_MOUSEMOVE: {
 			if (atoi(param[1].c_str()) == 2) {
-				x = GET_X_LPARAM(lParam);//LOWORD
-				y = GET_Y_LPARAM(lParam);//HIWORD
-				if (y > 80) {
+				x = GET_Y_LPARAM(lParam);//LOWORD
+				y = GET_X_LPARAM(lParam);//HIWORD
+				if (x > 80) {
 					redraw = 1;
+					x = x - 80;//x is Height
 					InvalidateRect(hWnd, NULL, false);
 				}
 			}
@@ -329,13 +348,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					bmi.bmiHeader.biBitCount = 24;
 					bmi.bmiHeader.biCompression = BI_RGB;
 					if (atoi(param[1].c_str()) == 1) {
-						//bmi.bmiHeader.biWidth = inImage.getWidth();
-						//bmi.bmiHeader.biHeight = -inImage.getHeight();  // Use negative height.  DIB is top-down.
-						//bmi.bmiHeader.biSizeImage = inImage.getWidth() * inImage.getHeight();
-						//SetDIBitsToDevice(hdc,
-						//	0, 80, inImage.getWidth(), inImage.getHeight(),
-						//	0, 0, 0, inImage.getHeight(),
-						//	inImage.getImageData(), &bmi, DIB_RGB_COLORS);
 						bmi.bmiHeader.biWidth = inImage.getChangedWidth();
 						bmi.bmiHeader.biHeight = -inImage.getChangedHeight();  // Use negative height.  DIB is top-down.
 						bmi.bmiHeader.biSizeImage = inImage.getChangedWidth() * inImage.getChangedHeight();
@@ -358,50 +370,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 							SetDIBitsToDevice(hdc,
 								0, 80, inImage.getWidth(), inImage.getHeight(),
 								0, 0, 0, inImage.getHeight(),
-								inImage.getImageData(), &bmi, DIB_RGB_COLORS);
-							//StretchDIBits(hdc, x, y, 50, 50, x-25, y-25, inImage.getWidth(), inImage.getHeight(),
-							//	inImage.getImageData(), &bmi, DIB_RGB_COLORS, SRCCOPY);
-							double  ratio = atof(param[2].c_str());
-							char* Circle = inImage.getChangedData();
-							int newX = int((x + 1) * ratio + 0.5) - 1;
-							int newY = int((y - 80 + 1) * ratio + 0.5) - 1;
-							//creat circle?
-							//for (int i=1;i< inImage.getChangedHeight();i++){
-							//	for (int j = 1; j < inImage.getChangedWidth(); j++) {
-							//		if (sqrt((i - newX) * (i - newX) + (j - newY) * (j - newY)) > 50) {
-							//			Circle[3 * (i * inImage.getChangedWidth() + j)] = 255;
-							//			Circle[3 * (i * inImage.getChangedWidth() + j) + 1] = 255;
-							//			Circle[3 * (i * inImage.getChangedWidth() + j) + 2] = 255;
-							//		}
-							//	}
-							//}
-							//SelectObject(hdc, GetStockObject(HOLLOW_BRUSH));
-							//Ellipse(hdc, (x - 50), (y- 50), 100, 100);
-
-							bmi.bmiHeader.biWidth = inImage.getChangedWidth();
-							bmi.bmiHeader.biHeight = -inImage.getChangedHeight();  // Use negative height.  DIB is top-down.
-							bmi.bmiHeader.biSizeImage = inImage.getChangedWidth() * inImage.getChangedHeight();
-							SetDIBitsToDevice(hdc,
-								(x - 50), max((y - 50), 80), 100, 100,
-								//(x *ratio):new location,- 50:left side
-								min(max(newX - 50, 0), inImage.getChangedWidth() - 100),
-								//(y - 80):picture area,
-								min(inImage.getChangedHeight() - newY - 50, inImage.getChangedHeight() - 100),
-								0, inImage.getChangedHeight(), //lower-left
-								Circle, &bmi, DIB_RGB_COLORS);
+								getCircle(x,y), &bmi, DIB_RGB_COLORS);
 							redraw = 0;
 						}
 					}
 				}
-				//else {
-				//	bmi.bmiHeader.biWidth = inImage.getWidth();
-				//	bmi.bmiHeader.biHeight = -inImage.getHeight();  // Use negative height.  DIB is top-down.
-				//	bmi.bmiHeader.biSizeImage = inImage.getWidth() * inImage.getHeight();
-				//	SetDIBitsToDevice(hdc,
-				//		0, 80, inImage.getWidth(), inImage.getHeight(),
-				//		0, 0, 0, inImage.getHeight(),
-				//		inImage.getChangedData(), &bmi, DIB_RGB_COLORS);
-				//}
 				else {
 					std::vector<int> errors = getError();
 					

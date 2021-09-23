@@ -76,6 +76,7 @@ MyImage & MyImage::operator= (const MyImage &otherImage)
 
 // MyImage::ReadImage
 // Function to read the image given a path
+//-128-127
 bool MyImage::ReadImage()
 {
 
@@ -228,13 +229,16 @@ void ToHSV(char*& Data, const int& Height, const int& Width) {
 	float* Data3 = new float[Width * Height * 3];//HSV
 	for (int i = 0; i < Height * Width; i++) {
 
-		CMAX = max(max(Data[3 * i], Data[3 * i + 1]), Data[3 * i + 2]);
-		CMIN = min(min(Data[3 * i], Data[3 * i + 1]), Data[3 * i + 2]);
+		CMAX = max(max(Data[3 * i]+128, Data[3 * i + 1]) + 128, Data[3 * i + 2] + 128);
+		CMIN = min(min(Data[3 * i] + 128, Data[3 * i + 1]) + 128, Data[3 * i + 2] + 128);
 		delt = CMAX - CMIN;
+		if (CMAX < 0) {
+			CMAX = int(CMAX);
+		}
 		if (delt != 0) {
 			if (Data[3 * i+2]==CMAX) {
-				//Data3[3 * i] = 60 * ((Data[3 * i + 1] - Data[3 * i]) / delt);
-				Data3[3 * i] = 60 * fmod(((Data[3 * i + 1] - Data[3 * i]) / delt), 6) ;
+				Data3[3 * i] = 60 * ((Data[3 * i + 1] - Data[3 * i]) / delt);
+				//Data3[3 * i] = 60 * fmod(((Data[3 * i + 1] - Data[3 * i]) / delt), 6) ;
 			}
 			else if (Data[3 * i + 1] == CMAX) {
 				Data3[3 * i] = 60 * (((Data[3 * i] - Data[3 * i + 2]) / delt)+2);
@@ -258,53 +262,52 @@ void ToHSV(char*& Data, const int& Height, const int& Width) {
 	}
 	//TORGB
 	for (int i = 0; i < Height * Width; i++) {
-		//if (Data3[3 * i + 1]== 0){
-		//	Data[3 * i] = 0;
-		//	Data[3 * i + 1] = 0;
-		//	Data[3 * i + 2] = 0;
-		//	continue;
-		//}
-		//Data3[3 * i] /= 60;
-		//double v = Data3[3 * i + 2];
-		//int j = floor(Data3[3 * i]);
-		//double f = Data3[3 * i] - j;
-		//int p = min(max(round(v * (1 - Data3[3 * i + 1])),0),255);
-		//int q = min(max(round(v * (1 - Data3[3 * i + 1] * f)), 0),255);
-		//int t = min(max(round(v * (1 - Data3[3 * i + 1]*(1-f))), 0),255);
-		//v = min(max(v, 0), 255);
-		//switch (j) {
-		//case 0:
-		//	Data[3 * i] = p;
-		//	Data[3 * i + 1] = t;
-		//	Data[3 * i + 2] = int(v);
-		//	continue;
-		//case 1:
-		//	Data[3 * i] = p;
-		//	Data[3 * i + 1] = int(v);
-		//	Data[3 * i + 2] = q;
-		//	continue;
-		//case 2:
-		//	Data[3 * i] = t;
-		//	Data[3 * i + 1] = int(v);
-		//	Data[3 * i + 2] = p;
-		//	continue;
-		//case 3:
-		//	Data[3 * i] = int(v);
-		//	Data[3 * i + 1] = q;
-		//	Data[3 * i + 2] = p;
-		//	continue;
-		//case 4:
-		//	Data[3 * i] = int(v);
-		//	Data[3 * i + 1] = p;
-		//	Data[3 * i + 2] = t;
-		//	continue;
-		//default:
-		//	Data[3 * i] = q;
-		//	Data[3 * i + 1] = p;
-		//	Data[3 * i + 2] = int(v);
-		//	continue;
-		//}
-		
+		if (Data3[3 * i + 1]== 0){
+			Data[3 * i] = 0;
+			Data[3 * i + 1] = 0;
+			Data[3 * i + 2] = 0;
+			continue;
+		}
+		Data3[3 * i] /= 60;
+		double v = Data3[3 * i + 2]-128;
+		int j = floor(Data3[3 * i]);
+		double f = Data3[3 * i] - j;
+		int p = round(v * (1 - Data3[3 * i + 1])) - 128;
+		int q = round(v * (1 - Data3[3 * i + 1] * f)) - 128;
+		int t = round(v * (1 - Data3[3 * i + 1]*(1-f))) - 128;
+		switch (j) {
+		case 0:
+			Data[3 * i] = p;
+			Data[3 * i + 1] = t;
+			Data[3 * i + 2] = int(v);
+			continue;
+		case 1:
+			Data[3 * i] = p;
+			Data[3 * i + 1] = int(v);
+			Data[3 * i + 2] = q;
+			continue;
+		case 2:
+			Data[3 * i] = t;
+			Data[3 * i + 1] = int(v);
+			Data[3 * i + 2] = p;
+			continue;
+		case 3:
+			Data[3 * i] = int(v);
+			Data[3 * i + 1] = q;
+			Data[3 * i + 2] = p;
+			continue;
+		case 4:
+			Data[3 * i] = int(v);
+			Data[3 * i + 1] = p;
+			Data[3 * i + 2] = t;
+			continue;
+		default:
+			Data[3 * i] = q;
+			Data[3 * i + 1] = p;
+			Data[3 * i + 2] = int(v);
+			continue;
+		}
+		/*
 		float C = Data3[3 * i + 1] * Data3[3 * i + 2];
 		float m = Data3[3 * i + 2] - C;
 		float h = fmod(Data3[3 * i] / 60.0, 6);
@@ -344,7 +347,7 @@ void ToHSV(char*& Data, const int& Height, const int& Width) {
 			Data[3 * i] = m * 255;
 			Data[3 * i + 1] = m * 255;
 			Data[3 * i + 2] = m * 255;
-		}
+		}*/
 		
 	}
 	delete Data3;
@@ -360,22 +363,22 @@ void Bright(char*& Data, const int& Height, const int& Width) {
 
 	for (i = 0; i < Height * Width; i++)
 	{
-		Bbuf[i] = Data[3 * i];
-		Gbuf[i] = Data[3 * i + 1];
-		Rbuf[i] = Data[3 * i + 2];
-		Y[i] = (0.114 * Bbuf[i] + 0.587 * Gbuf[i] + 0.299 * Rbuf[i]) / 0.75;
+		Bbuf[i] = Data[3 * i]+128;
+		Gbuf[i] = Data[3 * i + 1] + 128;
+		Rbuf[i] = Data[3 * i + 2] + 128;
+		//Y[i] = (0.114 * Bbuf[i] + 0.587 * Gbuf[i] + 0.299 * Rbuf[i]) / 0.75;
 	}
 	for (int i = 0; i < Height * Width; i++) {
 
-		//Data[3 * i] = Bbuf[i] ;
-		//Data[3 * i + 1] = Gbuf[i] ;
-		//Data[3 * i + 2] = Rbuf[i] ;
-		Data[3 * i] = round(Y[i] /(0.114 + 0.299 * Rbuf[i] / Bbuf[i] + 0.587 * Gbuf[i] / Bbuf[i]));
-		Data[3 * i + 1]= round(Y[i] /(0.587 + 0.299 *Rbuf[i] / Gbuf[i] + 0.114 * Bbuf[i] / Gbuf[i]));
-		Data[3 * i + 2]= round(Y[i] / (0.299 + 0.587 * Gbuf[i] / Rbuf[i] + 0.114 *Bbuf[i] / Rbuf[i]));
-		if (Data[3 * i] >= 255) { Data[3 * i] = 255; }
-		if (Data[3 * i+1] >= 255) { Data[3 * i + 1] = 255; }
-		if (Data[3 * i + 2] >= 255) { Data[3 * i + 2] = 255; }
+		Data[3 * i] = Bbuf[i]/2-128 ;
+		Data[3 * i + 1] = Gbuf[i]/2 - 128;
+		Data[3 * i + 2] = Rbuf[i]/2 - 128;
+		//Data[3 * i] = round(Y[i] /(0.114 + 0.299 * Rbuf[i] / Bbuf[i] + 0.587 * Gbuf[i] / Bbuf[i]));
+		//Data[3 * i + 1]= round(Y[i] /(0.587 + 0.299 *Rbuf[i] / Gbuf[i] + 0.114 * Bbuf[i] / Gbuf[i]));
+		//Data[3 * i + 2]= round(Y[i] / (0.299 + 0.587 * Gbuf[i] / Rbuf[i] + 0.114 *Bbuf[i] / Rbuf[i]));
+		//if (Data[3 * i] >= 255) { Data[3 * i] = 255; }
+		//if (Data[3 * i+1] >= 255) { Data[3 * i + 1] = 255; }
+		//if (Data[3 * i + 2] >= 255) { Data[3 * i + 2] = 255; }
 	}
 	delete Rbuf;
 	delete Gbuf;
@@ -448,7 +451,7 @@ bool MyImage::Modify(const int& mode, const double& ratio, const int& antiAlisin
 			Resize(Data, Data2, Height, Width, ratio);
 			delete Data3;
 		}
-		ToHSV(Data, Height, Width);
+		Bright(Data, Height, Width);
 
 	}
 	else {
